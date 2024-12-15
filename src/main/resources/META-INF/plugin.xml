@@ -1,0 +1,31 @@
+<idea-plugin>
+    <id>com.ownicn.groovy-script-plugin</id>
+    <name>Action Script</name>
+    <vendor>mr.zhao</vendor>
+    <description><![CDATA[
+        Plugin for executing custom Action scripts within IntelliJ IDEA.
+    ]]></description>
+    <version>1.0</version>
+    <idea-version since-build="183"/>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.intellij.groovy</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="com.ownicn.settings.ActionScriptSettings"/>
+        <applicationConfigurable instance="com.ownicn.settings.ActionScriptConfigurable" displayName="Action Script"/>
+        <completion.contributor language="Groovy" implementationClass="com.ownicn.util.DynamicCompletionContributor"/>
+    </extensions>
+    
+    <actions>
+        <action id="ExecuteGroovyScript"
+                class="com.ownicn.actions.ExecuteGroovyScriptAction"
+                text="Action Script .."
+                icon="AllIcons.CodeWithMe.CwmVerified"
+                description="Execute configured action script">
+            <add-to-group group-id="ToolsMenu" anchor="first"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="EditorToggleColumnMode" />
+            <keyboard-shortcut first-keystroke="alt A" keymap="$default"/>
+        </action>
+    </actions>
+</idea-plugin> 
