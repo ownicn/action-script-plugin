@@ -61,11 +61,11 @@ public class GroovyScriptRunner {
             GroovyShell newShell = new GroovyShell(GroovyScriptRunner.class.getClassLoader(), binding, config);
             Object result = newShell.parse(scriptContent, SCRIPT_NAME).run();
             if (result != null && scriptContent.trim().matches("(?s).*\\breturn\\b.*$")) {
-                consoleViewManager.print(result + "\n");
+                consoleViewManager.print(result + "\n", false);
             }
         } catch (Exception e) {
             String errorMessage = ScriptErrorHandler.formatError(e, scriptContent);
-            consoleViewManager.printErr(errorMessage);
+            consoleViewManager.print(errorMessage, true);
         } finally {
             System.setOut(oldOut);
             System.setErr(oldErr);

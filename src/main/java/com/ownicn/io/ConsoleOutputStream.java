@@ -1,12 +1,15 @@
 package com.ownicn.io;
 
+import org.jetbrains.annotations.NotNull;
 
+import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class ConsoleOutputStream extends OutputStream {
     private final ConsoleViewManager console;
     private final boolean isError;
-    private final StringBuilder buffer = new StringBuilder();
+    private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
     public ConsoleOutputStream(ConsoleViewManager console) {
         this(console, false);
@@ -19,19 +22,21 @@ public class ConsoleOutputStream extends OutputStream {
 
     @Override
     public void write(int b) {
-        char c = (char) b;
-        buffer.append(c);
-        if (c == '\n') {
-            flush();
-        }
+        buffer.write(b);
+        flush();
+    }
+
+    @Override
+    public void write(byte @NotNull [] b, int off, int len) {
+        buffer.write(b, off, len);
+        flush();
     }
 
     @Override
     public void flush() {
-        if (!buffer.isEmpty()) {
-            String text = buffer.toString();
-            console.print(text, isError);
-            buffer.setLength(0);
+        if (buffer.size() > 0) {
+            console.print(buffer.toString(StandardCharsets.UTF_8), isError);
+            buffer.reset();
         }
     }
 }
