@@ -1,7 +1,10 @@
 package com.ownicn.groovy;
 
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.ownicn.extensions.BindingMaps;
+import com.ownicn.extensions.impl.DefaultClipboard;
+import com.ownicn.extensions.impl.DefaultSelection;
 import com.ownicn.io.ConsoleOutputStream;
 import com.ownicn.io.ConsoleViewManager;
 import com.ownicn.io.ScriptErrorHandler;
@@ -24,17 +27,25 @@ public class GroovyScriptRunner {
         CompilerConfiguration config = new CompilerConfiguration();
         config.setSourceEncoding("UTF-8");
 
-        // 创建绑定对象
-        Binding binding = new Binding();
-        binding.setProperty("project", project);
-
         // 使用当前类加载器创建 GroovyShell
         ClassLoader classLoader = GroovyScriptRunner.class.getClassLoader();
-        this.shell = new GroovyShell(classLoader, binding, config);
+        this.shell = new GroovyShell(classLoader, new Binding(), config);
     }
 
-    public void putVariable(String name, Object value) {
+    public void setVariable(String name, Object value) {
         shell.setVariable(name, value);
+    }
+
+    public GroovyScriptRunner additionalCapabilities(AnActionEvent actionEvent) {
+        Binding binding = this.shell.getContext();
+        Map<String, Object> bindingMap = BindingMaps.create(project).getBindingMap();
+        for (Map.Entry<String, Object> variable : bindingMap.entrySet()) {
+            binding.setVariable(variable.getKey(), variable.getValue());
+        }
+        this.setVariable("CLIPBOARD", new DefaultClipboard());
+        this.setVariable("SELECTION", new DefaultSelection(actionEvent));
+        this.setVariable("PROJECT", new com.ownicn.extensions.Project(project));
+        return this;
     }
 
     public void executeScript(String scriptContent) {
@@ -42,24 +53,12 @@ public class GroovyScriptRunner {
         ConsoleViewManager consoleViewManager = new ConsoleViewManager(project);
         try {
             consoleViewManager.clear();
-            
+
             // 重定向标准输出到 ConsoleView
             System.setOut(new PrintStream(new ConsoleOutputStream(consoleViewManager)));
             System.setErr(new PrintStream(new ConsoleOutputStream(consoleViewManager, true)));
 
-            // 为每次执行创建新的 GroovyShell，以便使用不同的脚本名
-            CompilerConfiguration config = new CompilerConfiguration();
-            config.setSourceEncoding("UTF-8");
-
-            Binding binding = shell.getContext();
-            Map<String, Object> bindingMap = BindingMaps.INSTANCE.getBindingMap();
-            for (Map.Entry<String, Object> variable : bindingMap.entrySet()) {
-                binding.setVariable(variable.getKey(), variable.getValue());
-            }
-            binding.setVariable("project", project);
-
-            GroovyShell newShell = new GroovyShell(GroovyScriptRunner.class.getClassLoader(), binding, config);
-            Object result = newShell.parse(scriptContent, SCRIPT_NAME).run();
+            Object result = shell.parse(scriptContent, SCRIPT_NAME).run();
             if (result != null && scriptContent.trim().matches("(?s).*\\breturn\\b.*$")) {
                 consoleViewManager.print(result + "\n", false);
             }

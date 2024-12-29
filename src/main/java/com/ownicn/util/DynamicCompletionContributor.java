@@ -2,48 +2,151 @@ package com.ownicn.util;
 
 import com.intellij.codeInsight.completion.*;
 import com.intellij.codeInsight.lookup.LookupElementBuilder;
+import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
 import com.intellij.patterns.PlatformPatterns;
+import com.intellij.patterns.PsiElementPattern;
 import com.intellij.psi.*;
+import com.intellij.psi.impl.light.LightPsiClassBuilder;
 import com.intellij.psi.impl.light.LightVariableBuilder;
 import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.ProcessingContext;
+import com.ownicn.extensions.BindingMaps;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.plugins.groovy.GroovyLanguage;
+import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression;
 
-import java.util.List;
-
+import java.util.Map;
 public class DynamicCompletionContributor extends CompletionContributor {
     public DynamicCompletionContributor() {
-        extend(CompletionType.BASIC, PlatformPatterns.psiElement(), new CompletionProvider<>() {
+        // 简单变量引用模式
+        PsiElementPattern.Capture<PsiElement> variablePattern = PlatformPatterns.psiElement()
+                .withParent(GrReferenceExpression.class)
+                .andNot(PlatformPatterns.psiElement().afterLeaf("."));
+
+        // 成员访问模式
+        PsiElementPattern.Capture<PsiElement> memberAccessPattern = PlatformPatterns.psiElement()
+                .withParent(GrReferenceExpression.class)
+                .afterLeaf(".");
+
+        // 简单变量补全
+        extend(CompletionType.BASIC, variablePattern, new CompletionProvider<>() {
             @Override
-            protected void addCompletions(@NotNull CompletionParameters parameters, @NotNull ProcessingContext context,
+            protected void addCompletions(@NotNull CompletionParameters parameters,
+                                          @NotNull ProcessingContext context,
                                           @NotNull CompletionResultSet result) {
-                PsiElement element = parameters.getPosition();
-                PsiType variableType = VariableTypeResolver.getVariableType(element);
-                if (variableType != null) {
-                    PsiClass psiClass = PsiClassUtil.resolvePsiClass(variableType, parameters.getEditor().getProject());
-                    if (psiClass != null) {
-                        List<String> members = ClassMemberExtractor.getClassMembers(psiClass);
-                        for (String member : members) {
-                            result.addElement(LookupElementBuilder.create(member));
-                        }
+                Project project = parameters.getEditor().getProject();
+                if (project == null) return;
+
+                Map<String, Object> bindingMap = BindingMaps.create(project).getBindingMap();
+                for (Map.Entry<String, Object> entry : bindingMap.entrySet()) {
+                    if (entry.getValue() != null) {
+                        addBuiltInVariable(result, project, entry.getKey(), entry.getValue().getClass().getName());
                     }
                 }
-                PsiVariable variable = createVariable(parameters.getEditor().getProject());
-                if (variable != null) {
-                    result.addElement(LookupElementBuilder.create(variable).withTypeText(variable.getType().getPresentableText())
-                            .withTailText(" - Project variable", true));
+            }
+        });
+
+        // 成员访问补全
+        extend(CompletionType.BASIC, memberAccessPattern, new CompletionProvider<>() {
+            @Override
+            protected void addCompletions(@NotNull CompletionParameters parameters,
+                                          @NotNull ProcessingContext context,
+                                          @NotNull CompletionResultSet result) {
+                Project project = parameters.getEditor().getProject();
+                if (project == null) return;
+
+                PsiElement position = parameters.getPosition();
+                GrReferenceExpression expression = PsiTreeUtil.getParentOfType(position, GrReferenceExpression.class);
+                if (expression == null) return;
+
+                PsiType qualifierType = expression.getQualifierExpression() != null
+                        ? expression.getQualifierExpression().getType()
+                        : null;
+
+                if (qualifierType == null && expression.getQualifierExpression() instanceof GrReferenceExpression) {
+                    String qualifierName = ((GrReferenceExpression) expression.getQualifierExpression()).getReferenceName();
+                    if (qualifierName != null) {
+                        qualifierType = getTypeFromBindingMap(project, qualifierName);
+                    }
+                }
+
+                if (qualifierType instanceof PsiClassType classType) {
+                    PsiClass psiClass = classType.resolve();
+                    if (psiClass != null) {
+                        for (PsiField field : psiClass.getAllFields()) {
+                            result.addElement(LookupElementBuilder.create(field)
+                                    .withTypeText(field.getType().getPresentableText())
+                                    .withIcon(AllIcons.Nodes.Field));
+                        }
+                        for (PsiMethod method : psiClass.getAllMethods()) {
+                            if (!method.isConstructor()) {
+                                result.addElement(LookupElementBuilder.create(method)
+                                        .withTypeText(method.getReturnType() != null
+                                                ? method.getReturnType().getPresentableText()
+                                                : "void")
+                                        .withTailText(method.getParameterList().getText(), true)
+                                        .withIcon(AllIcons.Nodes.Method));
+                            }
+                        }
+                    }
                 }
             }
         });
     }
 
-    public PsiVariable createVariable(Project project) {
-        // 创建一个名为 `project` 的变量，类型为 `Project`
+    private void addBuiltInVariable(@NotNull CompletionResultSet result,
+                                    @NotNull Project project,
+                                    @NotNull String name,
+                                    @NotNull String typeFqn) {
         JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
         GlobalSearchScope scope = GlobalSearchScope.allScope(project);
-        PsiType type = facade.getElementFactory().createTypeByFQClassName("com.intellij.openapi.project.impl.ProjectImpl", scope);
-        return new LightVariableBuilder<>(PsiManager.getInstance(project), "project", type, GroovyLanguage.INSTANCE);
+
+        PsiType type = null;
+        try {
+            type = facade.getElementFactory().createTypeByFQClassName(typeFqn, scope);
+        } catch (Exception e) {
+            PsiClass lightClass = createLightPsiClass(project, name, typeFqn);
+            if (lightClass != null) {
+                type = facade.getElementFactory().createType(lightClass);
+            }
+        }
+
+        if (type == null) return;
+
+        PsiVariable variable = new LightVariableBuilder<>(
+                PsiManager.getInstance(project),
+                name,
+                type,
+                GroovyLanguage.INSTANCE
+        );
+
+        result.addElement(LookupElementBuilder.create(variable)
+                .withTypeText(type.getPresentableText())
+                .withTailText(" - Built-in variable", true)
+                .withBoldness(true)
+                .withIcon(AllIcons.Nodes.Variable));
+    }
+
+    private PsiClass createLightPsiClass(@NotNull Project project, @NotNull String name, @NotNull String typeFqn) {
+        PsiElement context = PsiManager.getInstance(project).findDirectory(project.getBaseDir());
+        if (context == null) return null;
+
+        LightPsiClassBuilder lightClassBuilder = new LightPsiClassBuilder(context, typeFqn);
+        lightClassBuilder.setName(name);
+        return lightClassBuilder;
+    }
+
+    private PsiType getTypeFromBindingMap(@NotNull Project project, @NotNull String name) {
+        Map<String, Object> bindingMap = BindingMaps.create(project).getBindingMap();
+        Object value = bindingMap.get(name);
+        if (value != null) {
+            String typeFqn = value.getClass().getName();
+            JavaPsiFacade facade = JavaPsiFacade.getInstance(project);
+            return facade.getElementFactory().createTypeByFQClassName(typeFqn, GlobalSearchScope.allScope(project));
+        }
+        return PsiType.getJavaLangObject(PsiManager.getInstance(project), GlobalSearchScope.allScope(project));
     }
 }
+

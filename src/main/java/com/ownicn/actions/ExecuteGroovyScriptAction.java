@@ -1,8 +1,6 @@
 package com.ownicn.actions;
 
-import com.ownicn.extensions.impl.DefaultSelection;
 import com.ownicn.groovy.GroovyScriptRunner;
-import com.ownicn.io.ConsoleViewManager;
 import com.ownicn.settings.ActionScriptSettings;
 import com.ownicn.settings.ActionScriptSettings.ScriptEntry;
 import com.intellij.openapi.actionSystem.AnAction;
@@ -47,9 +45,7 @@ public class ExecuteGroovyScriptAction extends AnAction {
             public PopupStep<?> onChosen(ScriptEntry selectedValue, boolean finalChoice) {
                 if (finalChoice && selectedValue != null) {
                     GroovyScriptRunner runner = new GroovyScriptRunner(project);
-                    String scriptContent = selectedValue.getContent();
-                    runner.putVariable("SELECTION", new DefaultSelection(event));
-                    runner.executeScript(scriptContent);
+                    runner.additionalCapabilities(event).executeScript(selectedValue.getContent());
                 }
                 return FINAL_CHOICE;
             }

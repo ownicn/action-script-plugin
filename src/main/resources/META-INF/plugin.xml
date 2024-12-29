@@ -5,7 +5,7 @@
     <description><![CDATA[
         Plugin for executing custom Action scripts within IntelliJ IDEA.
     ]]></description>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <idea-version since-build="183"/>
 
     <change-notes>
@@ -17,6 +17,12 @@
                         <li>Fixed Chinese character encoding issues</li>
                         <li>Optimized console window behavior - only shows when there's output</li>
                         <li>Enhanced console output performance</li>
+                    </ul>
+                </li>
+                <li>Project handling improvements:
+                    <ul>
+                        <li>Fixed project detection to correctly identify the active project</li>
+                        <li>Improved focus handling for multi-project windows</li>
                     </ul>
                 </li>
                 <li>Added support for 2022.3+</li>
@@ -31,7 +37,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.ownicn.settings.ActionScriptSettings"/>
         <applicationConfigurable instance="com.ownicn.settings.ActionScriptConfigurable" displayName="Action Script"/>
-<!--        <completion.contributor language="Groovy" implementationClass="com.ownicn.util.DynamicCompletionContributor"/>-->
+        <completion.contributor language="Groovy" implementationClass="com.ownicn.util.DynamicCompletionContributor"/>
     </extensions>
     
     <actions>
