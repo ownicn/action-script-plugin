@@ -20,8 +20,7 @@ public class BaseActionToolbar extends AnAction {
     }
 
     public BaseActionToolbar(String text, String description, Icon icon, Consumer<AnActionEvent> action) {
-        super(text, description, icon);
-        this.action = action;
+        this(text, description, icon, action, (e) -> true);
     }
 
     public BaseActionToolbar(String text, String description, Icon icon, Consumer<AnActionEvent> action, Function<AnActionEvent, Boolean> enableFunction) {
@@ -44,7 +43,7 @@ public class BaseActionToolbar extends AnAction {
 
     @Override
     public void update(@NotNull AnActionEvent e) {
-        e.getPresentation().setEnabled(enableFunction != null ? enableFunction.apply(e) : true);
+        e.getPresentation().setEnabled(enableFunction.apply(e));
     }
 
 }

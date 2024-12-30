@@ -25,6 +25,8 @@ import java.awt.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ActionScriptSettingsPanel {
     private JPanel mainPanel;
@@ -35,6 +37,7 @@ public class ActionScriptSettingsPanel {
     private DefaultListModel<ScriptEntry> listModel;
     private boolean isModified = false;
     private boolean isUpdatingUI = false;
+    private final Map<ScriptEntry, ScriptEntry> modifiedEntries = new HashMap<>();
 
     public ActionScriptSettingsPanel() {
     }
@@ -151,6 +154,8 @@ public class ActionScriptSettingsPanel {
 
         // 添加监听器
         setupListeners();
+        
+        // 加载设置并确保选中第一项
         loadSettings();
     }
 
@@ -173,9 +178,12 @@ public class ActionScriptSettingsPanel {
     private void addNewScript() {
         ScriptEntry newEntry = new ScriptEntry("New Action", "", LanguageSupports.Groovy);
         listModel.addElement(newEntry);
+        // 确保新添加的项被选中
         scriptsList.setSelectedValue(newEntry, true);
         isModified = true;
+        // 请求焦点到名称字段
         nameField.requestFocus();
+        nameField.selectAll();  // 选中全部文本以便直接编辑
     }
 
     private void removeSelectedScript() {
@@ -214,7 +222,12 @@ public class ActionScriptSettingsPanel {
             public void documentChanged(@NotNull DocumentEvent event) {
                 if (!isUpdatingUI) {
                     String newText = event.getDocument().getText();
-                    updateScriptFromEditor(entry -> entry.setContent(newText));
+                    updateScriptFromEditor(entry -> {
+                        // 创建或获取临时副本
+                        ScriptEntry tempEntry = modifiedEntries.computeIfAbsent(entry, 
+                            original -> new ScriptEntry(original.getName(), original.getContent(), original.getLanguage()));
+                        tempEntry.setContent(newText);
+                    });
                     isModified = true;
                 }
             }
@@ -226,7 +239,12 @@ public class ActionScriptSettingsPanel {
                     try {
                         String newText = e.getDocument().getText(0, e.getDocument().getLength());
                         if (e.getDocument() == nameField.getDocument()) {
-                            updateScriptFromEditor(entry -> entry.setName(newText));
+                            updateScriptFromEditor(entry -> {
+                                // 创建或获取临时副本
+                                ScriptEntry tempEntry = modifiedEntries.computeIfAbsent(entry,
+                                    original -> new ScriptEntry(original.getName(), original.getContent(), original.getLanguage()));
+                                tempEntry.setName(newText);
+                            });
                         }
                         isModified = true;
                     } catch (BadLocationException ex) {
@@ -268,9 +286,17 @@ public class ActionScriptSettingsPanel {
         try {
             ScriptEntry selected = scriptsList.getSelectedValue();
             if (selected != null) {
-                nameField.setText(selected.getName());
-                editorTextField.setText(selected.getContent());
-                languageComboBox.setSelectedItem(selected.getLanguage());
+                // 显示临时修改的内容（如果有）
+                ScriptEntry tempEntry = modifiedEntries.get(selected);
+                if (tempEntry != null) {
+                    nameField.setText(tempEntry.getName());
+                    editorTextField.setText(tempEntry.getContent());
+                    languageComboBox.setSelectedItem(tempEntry.getLanguage());
+                } else {
+                    nameField.setText(selected.getName());
+                    editorTextField.setText(selected.getContent());
+                    languageComboBox.setSelectedItem(selected.getLanguage());
+                }
                 nameField.requestFocus();
             } else {
                 nameField.setText("");
@@ -289,16 +315,30 @@ public class ActionScriptSettingsPanel {
     public void apply() {
         ActionScriptSettings settings = ActionScriptSettings.getInstance();
         if (settings.getState() != null) {
+            // 应用所有修改
+            for (Map.Entry<ScriptEntry, ScriptEntry> entry : modifiedEntries.entrySet()) {
+                ScriptEntry original = entry.getKey();
+                ScriptEntry modified = entry.getValue();
+                original.setName(modified.getName());
+                original.setContent(modified.getContent());
+                original.setLanguage(modified.getLanguage());
+            }
+            
+            // 清空修改记录
+            modifiedEntries.clear();
+            
+            // 保存到设置
             settings.getState().getScripts().clear();
-        }
-        for (int i = 0; i < listModel.size(); i++) {
-            settings.getState().getScripts().add(listModel.getElementAt(i));
+            for (int i = 0; i < listModel.size(); i++) {
+                settings.getState().getScripts().add(listModel.getElementAt(i));
+            }
         }
         isModified = false;
     }
 
     public void reset() {
         listModel.clear();
+        modifiedEntries.clear();
         ActionScriptSettings settings = ActionScriptSettings.getInstance();
         if (settings.getState() != null) {
             for (ScriptEntry entry : settings.getState().getScripts()) {
@@ -306,25 +346,36 @@ public class ActionScriptSettingsPanel {
             }
         }
         isModified = false;
+        updateEditor4Selected();
     }
 
     public void loadSettings() {
         ActionScriptSettings settings = ActionScriptSettings.getInstance();
         listModel.clear();
+        modifiedEntries.clear();
+        
         if (settings.getState() != null) {
             for (ScriptEntry entry : settings.getState().getScripts()) {
                 listModel.addElement(entry);
             }
         }
+        // 确保在加载设置后更新控件状态
         updateControlsEditableState();
+        // 如果列表为空，确保添加按钮可用
+        if (listModel.isEmpty()) {
+            mainPanel.revalidate();
+            mainPanel.repaint();
+        }
     }
 
     private void updateControlsEditableState() {
-        boolean hasItems = !listModel.isEmpty();
-        nameField.setEnabled(hasItems);
-        editorTextField.setEnabled(hasItems);
-        languageComboBox.setEnabled(hasItems);
-        if (hasItems && scriptsList.getSelectedIndex() == -1) {
+        boolean hasSelection = scriptsList != null && !scriptsList.isSelectionEmpty();
+        nameField.setEnabled(hasSelection);
+        editorTextField.setEnabled(hasSelection);
+        languageComboBox.setEnabled(hasSelection);
+
+        // 如果有选中项但没有设置选中索引，则设置第一项为选中
+        if (scriptsList.getSelectedIndex() == -1) {
             scriptsList.setSelectedIndex(0);
         }
     }
@@ -338,10 +389,5 @@ public class ActionScriptSettingsPanel {
             Disposer.dispose(editorTextField);
             editorTextField = null;
         }
-    }
-
-    // 在面板被隐藏时调用
-    public void onHide() {
-        dispose();
     }
 }

@@ -19,6 +19,7 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiFileFactory;
 import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.util.ui.UIUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -58,6 +59,7 @@ public class LanguageEditor extends JPanel implements Disposable {
                 // 获取 IDEA 的全局编辑器配色方案
                 EditorColorsScheme colorsScheme = EditorColorsManager.getInstance().getGlobalScheme();
                 editorEx.setColorsScheme(colorsScheme);
+                editorEx.setBackgroundColor(null);
 
                 // 设置语法高亮
                 editorEx.setHighlighter(EditorHighlighterFactory.getInstance().createEditorHighlighter(getFileType(), colorsScheme, project));
@@ -95,23 +97,40 @@ public class LanguageEditor extends JPanel implements Disposable {
     }
 
     @Override
-    public void dispose() {
-        if (editorEx != null && !editorEx.isDisposed()) {
-            EditorFactory.getInstance().releaseEditor(editorEx);
-            editorEx = null;
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (editor != null) {
+            editor.setEnabled(enabled);
+            if (editorEx != null) {
+                editorEx.setViewer(!enabled);
+                // 更新编辑器的背景色
+                if (enabled) {
+                    editorEx.setBackgroundColor(null);
+                } else {
+                    editorEx.setBackgroundColor(UIUtil.getPanelBackground());
+                }
+            }
         }
-        removeAll();
-    }
-
-    public String getText() {
-        return editor.getText();
     }
 
     public void setText(String text) {
         editor.setText(text);
     }
 
+    public String getText() {
+        return editor.getText();
+    }
+
     public EditorTextField getEditor() {
         return editor;
+    }
+
+    @Override
+    public void dispose() {
+        if (editorEx != null && !editorEx.isDisposed()) {
+            EditorFactory.getInstance().releaseEditor(editorEx);
+            editorEx = null;
+        }
+        removeAll();
     }
 }

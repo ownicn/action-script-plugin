@@ -37,4 +37,10 @@ public class ActionScriptConfigurable implements Configurable {
     public void reset() {
         settingsPanel.reset();
     }
+
+    @Override
+    public void disposeUIResources() {
+        settingsPanel.dispose();
+    }
+
 }
