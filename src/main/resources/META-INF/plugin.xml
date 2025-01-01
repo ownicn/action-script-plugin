@@ -5,12 +5,24 @@
     <description><![CDATA[
         Plugin for executing custom Action scripts within IntelliJ IDEA.
     ]]></description>
-    <version>1.0.5</version>
+    <version>1.1.0</version>
     <idea-version since-build="183"/>
 
     <change-notes>
         <![CDATA[
             <ul>
+                <li>UI improvements:
+                    <ul>
+                        <li>Improved popup menu layout and grouping</li>
+                        <li>Standardized action names and menu titles</li>
+                    </ul>
+                </li>
+                <li>Action Script Settings:
+                    <ul>
+                        <li>Added Apply button to settings dialog</li>
+                        <li>Improved settings panel UI</li>
+                    </ul>
+                </li>
                 <li>Console improvements:
                     <ul>
                         <li>Added support for ANSI color output</li>
@@ -25,7 +37,6 @@
                         <li>Improved focus handling for multi-project windows</li>
                     </ul>
                 </li>
-                <li>Added support for 2022.3+</li>
             </ul>
         ]]>
     </change-notes>
@@ -42,11 +53,12 @@
     <actions>
         <action id="ExecuteActionScript"
                 class="com.ownicn.actions.ExecuteGroovyScriptAction"
-                text="Action Script ..."
+                text="Action Script..."
                 icon="AllIcons.CodeWithMe.CwmVerified"
                 description="Execute configured action script">
             <add-to-group group-id="ToolsMenu" anchor="first"/>
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="EditorToggleColumnMode" />
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="ProjectViewEditSource"/>
             <keyboard-shortcut first-keystroke="alt A" keymap="$default"/>
         </action>
         

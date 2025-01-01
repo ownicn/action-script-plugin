@@ -1,54 +1,69 @@
 package com.ownicn.actions;
 
+import com.intellij.ide.DataManager;
+import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.ui.popup.ListPopup;
 import com.ownicn.groovy.GroovyScriptRunner;
 import com.ownicn.settings.ActionScriptSettings;
 import com.ownicn.settings.ActionScriptSettings.ScriptEntry;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.openapi.ui.popup.PopupStep;
-import com.intellij.openapi.ui.popup.util.BaseListPopupStep;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ExecuteGroovyScriptAction extends AnAction {
     @Override
-    public void actionPerformed(@NotNull AnActionEvent e) {
-        Project project = e.getProject();
+    public void actionPerformed(@NotNull AnActionEvent event) {
+        Project project = event.getProject();
         if (project == null) return;
 
-        ActionScriptSettings settings = ActionScriptSettings.getInstance();
-        List<ScriptEntry> scripts = null;
-        if (settings.getState() != null) {
-            scripts = settings.getState().getScripts();
+        DefaultActionGroup actionGroup = new DefaultActionGroup();
+        DefaultActionGroup scriptsGroup = new DefaultActionGroup();
+        List<ScriptEntry> scripts = Objects.requireNonNull(ActionScriptSettings.getInstance().getState()).getScripts();
+
+        if (scripts.isEmpty()) {
+            scriptsGroup.add(new AnAction("No Scripts Available") {
+                @Override
+                public void actionPerformed(@NotNull AnActionEvent e) {
+                }
+
+                @Override
+                public void update(@NotNull AnActionEvent e) {
+                    e.getPresentation().setEnabled(false);
+                }
+
+                @Override
+                public @NotNull ActionUpdateThread getActionUpdateThread() {
+                    return ActionUpdateThread.EDT;
+                }
+            });
+        } else {
+            for (int i = 0; i < scripts.size(); i++) {
+                scriptsGroup.add(getScriptAction(scripts, i, project));
+            }
         }
 
-        if (scripts != null && scripts.isEmpty()) {
-            Messages.showWarningDialog(project, "No scripts configured", "Execute Action Script");
-            return;
-        }
+        actionGroup.add(Separator.create());
+        actionGroup.add(scriptsGroup);
+        actionGroup.add(Separator.create("More"));
+        actionGroup.add(new DefaultAnAction("_0 Action Script Settings", e -> new OpenSettingsAction().actionPerformed(e)));
 
-        chooseScriptRun(project, e, scripts);
+        ListPopup popup = JBPopupFactory.getInstance().createActionGroupPopup(
+                "Operations",
+                actionGroup,
+                DataManager.getInstance().getDataContext(Objects.requireNonNull(event.getInputEvent()).getComponent()),
+                JBPopupFactory.ActionSelectionAid.MNEMONICS,
+                true
+        );
+
+        popup.showCenteredInCurrentWindow(project);
     }
 
-    private void chooseScriptRun(Project project, AnActionEvent event, List<ScriptEntry> scripts) {
-        JBPopupFactory.getInstance().createListPopup(new BaseListPopupStep<>("Choose Script", scripts) {
-            @Override
-            public @NotNull String getTextFor(ScriptEntry value) {
-                return value.getName();
-            }
-
-            @Override
-            public PopupStep<?> onChosen(ScriptEntry selectedValue, boolean finalChoice) {
-                if (finalChoice && selectedValue != null) {
-                    GroovyScriptRunner runner = new GroovyScriptRunner(project);
-                    runner.additionalCapabilities(event).executeScript(selectedValue.getContent());
-                }
-                return FINAL_CHOICE;
-            }
-        }).showCenteredInCurrentWindow(project);
+    private static @NotNull AnAction getScriptAction(List<ScriptEntry> scripts, int i, Project project) {
+        ScriptEntry script = scripts.get(i);
+        String name = (i < 9) ? String.format("_%d ", i + 1) + script.getName() : "   " + script.getName();
+        return new DefaultAnAction(name, e -> new GroovyScriptRunner(project).additionalCapabilities(e).executeScript(script.getContent()));
     }
 } 

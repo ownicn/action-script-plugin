@@ -8,18 +8,29 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import javax.swing.AbstractAction;
 
 public class ActionScriptSettingsDialog extends DialogWrapper {
     private final Project project;
     private final ActionScriptSettingsPanel settingsPanel;
     private static final String DIMENSION_KEY = "#com.ownicn.settings.ActionScriptSettingsDialog";
     private static final Dimension DEFAULT_SIZE = new Dimension(1000, 600);
+    private final Action applyAction;
 
     public ActionScriptSettingsDialog(Project project) {
         super(project, true, IdeModalityType.IDE);
         this.project = project;
         settingsPanel = new ActionScriptSettingsPanel();
         settingsPanel.initComponents();
+        
+        // 创建 Apply 按钮
+        applyAction = new AbstractAction("Apply") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                doApplyAction();
+            }
+        };
         
         init();
         setTitle("Action Script Settings");
@@ -34,6 +45,11 @@ public class ActionScriptSettingsDialog extends DialogWrapper {
     }
 
     @Override
+    protected Action @NotNull [] createActions() {
+        return new Action[]{getOKAction(), applyAction, getCancelAction()};
+    }
+
+    @Override
     protected void doOKAction() {
         settingsPanel.apply();
         super.doOKAction();
@@ -45,9 +61,9 @@ public class ActionScriptSettingsDialog extends DialogWrapper {
         super.doCancelAction();
     }
 
-    @Override
-    protected Action @NotNull [] createActions() {
-        return new Action[]{getOKAction(), getCancelAction()};
+    protected void doApplyAction() {
+        settingsPanel.apply();
+        settingsPanel.getPanel().repaint();
     }
 
     @Override
