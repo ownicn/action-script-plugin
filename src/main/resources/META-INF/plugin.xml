@@ -36,7 +36,6 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.ownicn.settings.ActionScriptSettings"/>
-        <applicationConfigurable instance="com.ownicn.settings.ActionScriptConfigurable" displayName="Action Script"/>
         <completion.contributor language="Groovy" implementationClass="com.ownicn.util.DynamicCompletionContributor"/>
     </extensions>
     
@@ -49,6 +48,13 @@
             <add-to-group group-id="ToolsMenu" anchor="first"/>
             <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="EditorToggleColumnMode" />
             <keyboard-shortcut first-keystroke="alt A" keymap="$default"/>
+        </action>
+        
+        <action id="OpenActionScriptSettings"
+                class="com.ownicn.actions.OpenSettingsAction"
+                text="Action Script Settings"
+                description="Open action script settings">
+            <add-to-group group-id="ToolsMenu" anchor="after" relative-to-action="ExecuteActionScript"/>
         </action>
     </actions>
 </idea-plugin> 
