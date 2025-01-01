@@ -154,8 +154,6 @@ public class ActionScriptSettingsPanel {
 
         // 添加监听器
         setupListeners();
-        
-        // 加载设置并确保选中第一项
         loadSettings();
     }
 
@@ -178,10 +176,8 @@ public class ActionScriptSettingsPanel {
     private void addNewScript() {
         ScriptEntry newEntry = new ScriptEntry("New Action", "", LanguageSupports.Groovy);
         listModel.addElement(newEntry);
-        // 确保新添加的项被选中
         scriptsList.setSelectedValue(newEntry, true);
         isModified = true;
-        // 请求焦点到名称字段
         nameField.requestFocus();
         nameField.selectAll();  // 选中全部文本以便直接编辑
     }
@@ -369,6 +365,7 @@ public class ActionScriptSettingsPanel {
     }
 
     private void updateControlsEditableState() {
+        // 修改控件状态更新逻辑
         boolean hasSelection = scriptsList != null && !scriptsList.isSelectionEmpty();
         nameField.setEnabled(hasSelection);
         editorTextField.setEnabled(hasSelection);

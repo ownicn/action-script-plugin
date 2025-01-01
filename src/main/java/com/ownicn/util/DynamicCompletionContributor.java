@@ -18,6 +18,8 @@ import org.jetbrains.plugins.groovy.GroovyLanguage;
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrReferenceExpression;
 
 import java.util.Map;
+import java.util.Objects;
+
 public class DynamicCompletionContributor extends CompletionContributor {
     public DynamicCompletionContributor() {
         // 简单变量引用模式
@@ -130,7 +132,7 @@ public class DynamicCompletionContributor extends CompletionContributor {
     }
 
     private PsiClass createLightPsiClass(@NotNull Project project, @NotNull String name, @NotNull String typeFqn) {
-        PsiElement context = PsiManager.getInstance(project).findDirectory(project.getBaseDir());
+        PsiElement context = PsiManager.getInstance(project).findDirectory(Objects.requireNonNull(project.getWorkspaceFile()));
         if (context == null) return null;
 
         LightPsiClassBuilder lightClassBuilder = new LightPsiClassBuilder(context, typeFqn);
