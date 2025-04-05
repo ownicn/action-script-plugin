@@ -48,7 +48,7 @@ public class ExecuteGroovyScriptAction extends AnAction {
         actionGroup.add(Separator.create());
         actionGroup.add(scriptsGroup);
         actionGroup.add(Separator.create("More"));
-        actionGroup.add(new DefaultAnAction("_0 Action Script Settings", e -> new OpenSettingsAction().actionPerformed(e)));
+        actionGroup.add(new OpenSettingsAction("_0 Action Script Settings"));
 
         ListPopup popup = JBPopupFactory.getInstance().createActionGroupPopup(
                 "Operations",
