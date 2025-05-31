@@ -60,7 +60,11 @@ public class ExecuteGroovyScriptAction extends AnAction {
     private static @NotNull AnAction getScriptAction(List<ScriptEntry> scripts, int i, Project project) {
         ScriptEntry script = scripts.get(i);
         String name = (i < 9) ? String.format("_%d ", i + 1) + script.getName() : "   " + script.getName();
-        return new DefaultAnAction(name, e -> new GroovyScriptRunner(project).additionalCapabilities(e).executeScript(script.getContent()));
+        return new DefaultAnAction(name, actionEvent -> {
+            GroovyScriptRunner scriptRunner = new GroovyScriptRunner(project);
+            scriptRunner.additionalCapabilities(actionEvent);
+            scriptRunner.executeScript(script.getContent());
+        });
     }
 
     static class EmptyScriptAction extends AnAction {

@@ -3,8 +3,6 @@ package com.ownicn.groovy;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.ownicn.extensions.BindingMaps;
-import com.ownicn.extensions.impl.DefaultClipboard;
-import com.ownicn.extensions.impl.DefaultSelection;
 import com.ownicn.io.ConsoleOutputStream;
 import com.ownicn.io.ConsoleViewManager;
 import com.ownicn.io.ScriptErrorHandler;
@@ -32,20 +30,12 @@ public class GroovyScriptRunner {
         this.shell = new GroovyShell(classLoader, new Binding(), config);
     }
 
-    public void setVariable(String name, Object value) {
-        shell.setVariable(name, value);
-    }
-
-    public GroovyScriptRunner additionalCapabilities(AnActionEvent actionEvent) {
+    public void additionalCapabilities(AnActionEvent actionEvent) {
         Binding binding = this.shell.getContext();
-        Map<String, Object> bindingMap = BindingMaps.create(project).getBindingMap();
+        Map<String, Object> bindingMap = BindingMaps.create(project, actionEvent).getBindingMap();
         for (Map.Entry<String, Object> variable : bindingMap.entrySet()) {
             binding.setVariable(variable.getKey(), variable.getValue());
         }
-        this.setVariable("CLIPBOARD", new DefaultClipboard());
-        this.setVariable("SELECTION", new DefaultSelection(actionEvent));
-        this.setVariable("PROJECT", new com.ownicn.extensions.Project(project));
-        return this;
     }
 
     public void executeScript(String scriptContent) {
