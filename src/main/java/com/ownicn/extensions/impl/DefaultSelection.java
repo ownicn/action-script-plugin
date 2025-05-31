@@ -1,6 +1,5 @@
 package com.ownicn.extensions.impl;
 
-import com.ownicn.extensions.Selection;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.LangDataKeys;
@@ -8,7 +7,10 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.module.Module;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.ownicn.extensions.Module;
+import com.ownicn.extensions.Selection;
+
 
 public class DefaultSelection implements Selection {
 
@@ -37,10 +39,20 @@ public class DefaultSelection implements Selection {
     }
 
     @Override
-    public String getModule() {
-        Module module = event.getData(LangDataKeys.MODULE);
-        if (module != null) {
-            return module.getName();
+    public Module getModule() {
+        return new Module(event.getData(LangDataKeys.MODULE));
+    }
+
+    @Override
+    public String getPath() {
+        Editor editor = event.getData(CommonDataKeys.EDITOR);
+        if (editor != null) {
+            return editor.getVirtualFile().getPath();
+        }
+        // 尝试从项目视图获取
+        VirtualFile[] files = event.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
+        if (files != null && files.length > 0) {
+            return files[0].getPath();
         }
         return "";
     }
@@ -80,5 +92,10 @@ public class DefaultSelection implements Selection {
         }
 
         return text.substring(start, end);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("SELECTION{text=%s, path=%s, module=%s}", getText(), getPath(), getModule());
     }
 }

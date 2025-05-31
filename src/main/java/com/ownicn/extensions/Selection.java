@@ -4,5 +4,7 @@ public interface Selection {
 
     String getText();
 
-    String getModule();
+    Module getModule();
+
+    String getPath();
 }

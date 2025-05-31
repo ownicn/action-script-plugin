@@ -1,12 +1,17 @@
 package com.ownicn.util;
 
+import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.wm.IdeFrame;
 import com.intellij.openapi.wm.WindowManager;
+import com.ownicn.extensions.Module;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Collections;
 
 public class ProjectHolder {
 
@@ -40,5 +45,26 @@ public class ProjectHolder {
 
         // 如果没有找到合适的项目，返回默认项目
         return ProjectManager.getInstance().getDefaultProject();
+    }
+
+    /**
+     * 获取项目中的所有模块
+     * @param project 当前项目
+     * @return 模块列表，如果项目为空则返回空列表
+     */
+    @NotNull
+    public static java.util.List<Module> getModules(@Nullable Project project) {
+        if (project == null) {
+            return Collections.emptyList();
+        }
+        com.intellij.openapi.module.Module[] modules = ModuleManager.getInstance(project).getModules();
+        if (modules == null || modules.length == 0) {
+            return Collections.emptyList();
+        }
+        java.util.List<Module> moduleList = new java.util.ArrayList<>();
+        for (com.intellij.openapi.module.Module module : modules) {
+            moduleList.add(new Module(module));
+        }
+        return moduleList;
     }
 }

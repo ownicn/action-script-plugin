@@ -25,4 +25,9 @@ public class DefaultClipboard implements Clipboard {
         java.awt.datatransfer.Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         clipboard.setContents(new StringSelection(text), null);
     }
+
+    @Override
+    public String toString() {
+        return String.format("CLIPBOARD{text=%s}", getText());
+    }
 }
