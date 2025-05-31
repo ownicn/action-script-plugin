@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class ActionScriptSettingsPanel {
     private JPanel mainPanel;
@@ -166,6 +167,25 @@ public class ActionScriptSettingsPanel {
                 (e) -> removeSelectedScript(), hasSelected));
         group.add(new BaseActionToolbar("Copy", "Copy selected action", AllIcons.Actions.Copy,
                 (e) -> copySelectedScript(), hasSelected));
+                
+        group.addSeparator();
+        
+        Function<AnActionEvent, Boolean> canMoveUp = (e) -> {
+            int[] selectedIndices = scriptsList.getSelectedIndices();
+            return selectedIndices.length > 0 && selectedIndices[0] > 0;
+        };
+        
+        Function<AnActionEvent, Boolean> canMoveDown = (e) -> {
+            int[] selectedIndices = scriptsList.getSelectedIndices();
+            return selectedIndices.length > 0 && 
+                   selectedIndices[selectedIndices.length - 1] < listModel.size() - 1;
+        };
+        
+        group.add(new BaseActionToolbar("Move Up", "Move selected action up", 
+                AllIcons.Actions.MoveUp, (e) -> moveSelectedScript(-1), canMoveUp));
+        
+        group.add(new BaseActionToolbar("Move Down", "Move selected action down", 
+                AllIcons.Actions.MoveDown, (e) -> moveSelectedScript(1), canMoveDown));
 
         ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ActionScriptToolbar", group, true);
         toolbar.setTargetComponent(scriptsList);
@@ -201,6 +221,69 @@ public class ActionScriptSettingsPanel {
             nameField.requestFocus();
             isModified = true;
         }
+    }
+
+    private void moveSelectedScript(int offset) {
+        int[] selectedIndices = scriptsList.getSelectedIndices();
+        if (selectedIndices.length == 0) return;
+        
+        // 创建一个临时列表来存储所有项
+        List<ScriptEntry> allItems = new ArrayList<>(listModel.size());
+        for (int i = 0; i < listModel.size(); i++) {
+            allItems.add(listModel.getElementAt(i));
+        }
+        
+        // 创建选中项的列表
+        List<ScriptEntry> selectedItems = new ArrayList<>(selectedIndices.length);
+        for (int index : selectedIndices) {
+            selectedItems.add(allItems.get(index));
+        }
+        
+        if (offset < 0) {
+            // 向上移动
+            if (selectedIndices[0] <= 0) return;
+            
+            // 移动整个选中块
+            for (int i = 0; i < selectedItems.size(); i++) {
+                int oldIndex = selectedIndices[i];
+                int newIndex = oldIndex + offset;
+                
+                // 交换位置
+                ScriptEntry temp = allItems.get(newIndex);
+                allItems.set(newIndex, selectedItems.get(i));
+                allItems.set(oldIndex, temp);
+            }
+        } else {
+            // 向下移动
+            if (selectedIndices[selectedIndices.length - 1] >= listModel.size() - 1) return;
+            
+            // 从后向前移动整个选中块
+            for (int i = selectedItems.size() - 1; i >= 0; i--) {
+                int oldIndex = selectedIndices[i];
+                int newIndex = oldIndex + offset;
+                
+                // 交换位置
+                ScriptEntry temp = allItems.get(newIndex);
+                allItems.set(newIndex, selectedItems.get(i));
+                allItems.set(oldIndex, temp);
+            }
+        }
+        
+        // 更新列表模型
+        listModel.clear();
+        for (ScriptEntry item : allItems) {
+            listModel.addElement(item);
+        }
+        
+        // 更新选中项
+        int[] newSelectedIndices = new int[selectedIndices.length];
+        for (int i = 0; i < selectedIndices.length; i++) {
+            newSelectedIndices[i] = selectedIndices[i] + offset;
+        }
+        scriptsList.setSelectedIndices(newSelectedIndices);
+        
+        // 标记为已修改
+        isModified = true;
     }
 
     private void setupListeners() {

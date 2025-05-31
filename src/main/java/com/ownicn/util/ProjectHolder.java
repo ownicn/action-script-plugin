@@ -63,6 +63,9 @@ public class ProjectHolder {
         }
         java.util.List<Module> moduleList = new java.util.ArrayList<>();
         for (com.intellij.openapi.module.Module module : modules) {
+            if (module == null) {
+                continue;
+            }
             moduleList.add(new Module(module));
         }
         return moduleList;

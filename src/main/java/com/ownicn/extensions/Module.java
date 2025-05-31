@@ -5,6 +5,8 @@ import com.intellij.openapi.vfs.VirtualFile;
 
 public class Module {
 
+    public static final Module EMPTY = new Module(null);
+
     private final com.intellij.openapi.module.Module module;
 
     public Module(com.intellij.openapi.module.Module module) {
@@ -12,10 +14,16 @@ public class Module {
     }
 
     public String getName() {
+        if (module == null) {
+            return "";
+        }
         return module.getName();
     }
 
     public String getModulePath() {
+         if (module == null) {
+            return "";
+        }
         // 获取模块的根管理器
         ModuleRootManager rootManager = ModuleRootManager.getInstance(module);
 
@@ -36,6 +44,9 @@ public class Module {
 
     @Override
     public String toString() {
+         if (this == EMPTY) {
+            return "";
+        }
         return String.format("MODULE{name=%s, modulePath=%s}", getName(), getModulePath());
     }
 }

@@ -40,6 +40,9 @@ public class DefaultSelection implements Selection {
 
     @Override
     public Module getModule() {
+        if (event.getData(LangDataKeys.MODULE) == null) {
+            return Module.EMPTY;
+        }
         return new Module(event.getData(LangDataKeys.MODULE));
     }
 
