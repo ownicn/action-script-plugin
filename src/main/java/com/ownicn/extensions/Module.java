@@ -33,12 +33,6 @@ public class Module {
             return contentRoots[0].getPath();
         }
 
-        //noinspection UnstableApiUsage
-        VirtualFile moduleFile = module.getModuleFile();
-        if (moduleFile != null) {
-            return moduleFile.getParent().getPath();
-        }
-
         return "";
     }
 

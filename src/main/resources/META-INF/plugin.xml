@@ -5,36 +5,37 @@
     <description><![CDATA[
         Plugin for executing custom Action scripts within IntelliJ IDEA.
     ]]></description>
-    <version>1.1.0</version>
-    <idea-version since-build="183"/>
+    <version>1.2.0</version>
+    <idea-version since-build="232"/>
 
     <change-notes>
         <![CDATA[
             <ul>
                 <li>UI improvements:
                     <ul>
-                        <li>Improved popup menu layout and grouping</li>
-                        <li>Standardized action names and menu titles</li>
+                        <li>Added script list management features (move up/down)</li>
+                        <li>Improved multi-selection support in settings panel</li>
                     </ul>
                 </li>
-                <li>Action Script Settings:
+                <li>Settings Dialog improvements:
                     <ul>
-                        <li>Added Apply button to settings dialog</li>
-                        <li>Improved settings panel UI</li>
+                        <li>Added batch operations support for script entries</li>
+                        <li>Improved script list reordering with drag and drop</li>
+                        <li>Enhanced UI responsiveness and state management</li>
                     </ul>
                 </li>
-                <li>Console improvements:
+                <li>Project View integration:
                     <ul>
-                        <li>Added support for ANSI color output</li>
-                        <li>Fixed Chinese character encoding issues</li>
-                        <li>Optimized console window behavior - only shows when there's output</li>
-                        <li>Enhanced console output performance</li>
+                        <li>Added context menu support in project view</li>
+                        <li>Improved action visibility in different contexts</li>
                     </ul>
                 </li>
-                <li>Project handling improvements:
+                <li>Bug fixes:
                     <ul>
-                        <li>Fixed project detection to correctly identify the active project</li>
-                        <li>Improved focus handling for multi-project windows</li>
+                        <li>Fixed settings panel initialization issues</li>
+                        <li>Fixed script list selection state preservation</li>
+                        <li>Fixed Chinese character encoding in console output</li>
+                        <li>Improved memory management and resource cleanup</li>
                     </ul>
                 </li>
             </ul>
