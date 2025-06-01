@@ -146,7 +146,7 @@ public class ActionScriptSettingsPanel {
         rightPanel.add(editorPanel, BorderLayout.CENTER);
 
         // 使用分隔面板，设置初始比例为0.2（20%）
-        Splitter splitter = new Splitter(false, 0.22f);
+        Splitter splitter = new Splitter(false, 0.2f);
         splitter.setFirstComponent(new JBScrollPane(scriptsList));
         splitter.setSecondComponent(rightPanel);
 
@@ -462,6 +462,10 @@ public class ActionScriptSettingsPanel {
 
     public JComponent getPanel() {
         return mainPanel;
+    }
+
+    public LanguageEditor getEditor() {
+        return editorTextField;
     }
 
     public void dispose() {

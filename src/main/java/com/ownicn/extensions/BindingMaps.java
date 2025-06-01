@@ -27,9 +27,7 @@ public final class BindingMaps {
     private BindingMaps(Project PROJECT, AnActionEvent actionEvent) {
         bindingMap.put("CLIPBOARD", new DefaultClipboard());
         bindingMap.put("PROJECT", new com.ownicn.extensions.Project(PROJECT));
-        if (actionEvent != null) {
-            bindingMap.put("SELECTION", new DefaultSelection(actionEvent));
-        }
+        bindingMap.put("SELECTION", actionEvent == null ? null : new DefaultSelection(actionEvent));
         // bindingMap.put("FILES", FILES);
     }
 }

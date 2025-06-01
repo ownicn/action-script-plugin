@@ -1,15 +1,17 @@
 package com.ownicn.settings;
 
+import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.DimensionService;
+import com.ownicn.groovy.GroovyScriptRunner;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import javax.swing.AbstractAction;
 
 public class ActionScriptSettingsDialog extends DialogWrapper {
     private final Project project;
@@ -17,13 +19,14 @@ public class ActionScriptSettingsDialog extends DialogWrapper {
     private static final String DIMENSION_KEY = "#com.ownicn.settings.ActionScriptSettingsDialog";
     private static final Dimension DEFAULT_SIZE = new Dimension(1000, 600);
     private final Action applyAction;
+    private final Action runScriptAction;
 
     public ActionScriptSettingsDialog(Project project) {
-        super(project, true, IdeModalityType.IDE);
+        super(project, false, IdeModalityType.MODELESS);
         this.project = project;
         settingsPanel = new ActionScriptSettingsPanel();
         settingsPanel.initComponents();
-        
+
         // 创建 Apply 按钮
         applyAction = new AbstractAction("Apply") {
             @Override
@@ -31,7 +34,14 @@ public class ActionScriptSettingsDialog extends DialogWrapper {
                 doApplyAction();
             }
         };
-        
+
+        runScriptAction = new AbstractAction("Run Script", AllIcons.Actions.Execute) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                doRunScriptAction();
+            }
+        };
+
         init();
         setTitle("Action Script Settings");
     }
@@ -46,7 +56,7 @@ public class ActionScriptSettingsDialog extends DialogWrapper {
 
     @Override
     protected Action @NotNull [] createActions() {
-        return new Action[]{getOKAction(), applyAction, getCancelAction()};
+        return new Action[]{runScriptAction, getOKAction(), getCancelAction(), applyAction};
     }
 
     @Override
@@ -64,6 +74,12 @@ public class ActionScriptSettingsDialog extends DialogWrapper {
     protected void doApplyAction() {
         settingsPanel.apply();
         settingsPanel.getPanel().repaint();
+    }
+
+    protected void doRunScriptAction() {
+        GroovyScriptRunner runner = new GroovyScriptRunner(project);
+        runner.additionalCapabilities(AnActionEvent.createFromDataContext("", null, dataId -> null));
+        runner.executeScript(settingsPanel.getEditor().getText());
     }
 
     @Override
@@ -97,10 +113,10 @@ public class ActionScriptSettingsDialog extends DialogWrapper {
             Point parentLocation = window.getParent().getLocation();
             Dimension parentSize = window.getParent().getSize();
             Dimension windowSize = window.getSize();
-            
+
             int x = parentLocation.x + (parentSize.width - windowSize.width) / 2;
             int y = parentLocation.y + (parentSize.height - windowSize.height) / 2;
-            
+
             return new Point(x, y);
         }
         return null;
