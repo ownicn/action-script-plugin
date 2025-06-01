@@ -2,17 +2,26 @@ package com.ownicn.settings;
 
 import com.intellij.lang.Language;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.command.CommandProcessor;
+import com.intellij.openapi.command.UndoConfirmationPolicy;
+import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.command.impl.UndoManagerImpl;
+import com.intellij.openapi.command.undo.*;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.EditorSettings;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.PlainTextLanguage;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.LanguageTextField;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.plugins.groovy.GroovyFileType;
 import org.jetbrains.plugins.groovy.GroovyLanguage;
 import com.intellij.psi.PsiDocumentManager;
@@ -24,7 +33,6 @@ import com.intellij.util.ui.UIUtil;
 import javax.swing.*;
 import java.awt.*;
 
-@SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class LanguageEditor extends JPanel implements Disposable {
     private final EditorTextField editor;
     private final Project project;
@@ -34,24 +42,9 @@ public class LanguageEditor extends JPanel implements Disposable {
         super(new BorderLayout());
         this.project = project;
 
-        Language language = languageSupport == LanguageSupports.Groovy ? GroovyLanguage.INSTANCE :  PlainTextLanguage.INSTANCE;
-        final String finalExtension = "groovy";
-        final Language finalLanguage = language;
-
+        Language language = languageSupport == LanguageSupports.Groovy ? GroovyLanguage.INSTANCE : PlainTextLanguage.INSTANCE;
         // 创建编辑器
-        editor = new LanguageTextField(
-                language,
-                project,
-                "",
-                (text, lang, proj) -> {
-                    FileType fileType = GroovyFileType.GROOVY_FILE_TYPE;
-                    PsiFile psiFile = PsiFileFactory.getInstance(proj)
-                            .createFileFromText("dummy." + fileType.getDefaultExtension(),
-                                    lang != null ? lang : finalLanguage, text);
-                    return PsiDocumentManager.getInstance(proj).getDocument(psiFile);
-                },
-                true
-        ) {
+        editor = new LanguageTextField(language, project, "", false) {
             @Override
             protected @NotNull EditorEx createEditor() {
                 editorEx = super.createEditor();
@@ -76,16 +69,6 @@ public class LanguageEditor extends JPanel implements Disposable {
                 editorEx.setHorizontalScrollbarVisible(true);
 
                 return editorEx;
-            }
-
-            @Override
-            public boolean isViewer() {
-                return false;
-            }
-
-            @Override
-            public boolean isOneLineMode() {
-                return false;
             }
         };
 
@@ -115,6 +98,8 @@ public class LanguageEditor extends JPanel implements Disposable {
 
     public void setText(String text) {
         editor.setText(text);
+        // 清空撤销历史
+        ((UndoManagerImpl)UndoManager.getInstance(project)).dropHistoryInTests();
     }
 
     public String getText() {
