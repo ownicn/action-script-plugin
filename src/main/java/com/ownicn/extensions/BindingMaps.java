@@ -12,21 +12,21 @@ public final class BindingMaps {
 
     private final Map<String, Object> bindingMap = new HashMap<>();
 
-    public static BindingMaps create(Project PROJECT) {
-        return new BindingMaps(PROJECT, null);
+    public static BindingMaps create(Project project) {
+        return new BindingMaps(project, null);
     }
 
-    public static BindingMaps create(Project PROJECT, AnActionEvent actionEvent) {
-        return new BindingMaps(PROJECT, actionEvent);
+    public static BindingMaps create(Project project, AnActionEvent actionEvent) {
+        return new BindingMaps(project, actionEvent);
     }
 
     public Map<String, Object> getBindingMap() {
         return bindingMap;
     }
 
-    private BindingMaps(Project PROJECT, AnActionEvent actionEvent) {
+    private BindingMaps(Project project, AnActionEvent actionEvent) {
         bindingMap.put("CLIPBOARD", new DefaultClipboard());
-        bindingMap.put("PROJECT", new com.ownicn.extensions.Project(PROJECT));
+        bindingMap.put("PROJECT", new com.ownicn.extensions.Project(project));
         bindingMap.put("SELECTION", actionEvent == null ? null : new DefaultSelection(actionEvent));
         // bindingMap.put("FILES", FILES);
     }

@@ -1,48 +1,47 @@
 package com.ownicn.settings;
 
+import com.intellij.icons.AllIcons;
 import com.intellij.lang.Language;
 import com.intellij.openapi.Disposable;
-import com.intellij.openapi.command.CommandProcessor;
-import com.intellij.openapi.command.UndoConfirmationPolicy;
-import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.command.impl.UndoManagerImpl;
-import com.intellij.openapi.command.undo.*;
-import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.command.undo.UndoManager;
+import com.intellij.openapi.editor.Caret;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.EditorSettings;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.editor.ex.EditorEx;
 import com.intellij.openapi.editor.highlighter.EditorHighlighterFactory;
-import com.intellij.openapi.fileEditor.FileDocumentManager;
-import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.fileTypes.PlainTextLanguage;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.EditorTextField;
 import com.intellij.ui.LanguageTextField;
+import com.intellij.util.ui.JBUI;
+import com.intellij.util.ui.UIUtil;
+import com.ownicn.actions.DefaultAnAction;
+import com.ownicn.groovy.GroovyScriptRunner;
+import com.ownicn.util.EditorActionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.plugins.groovy.GroovyFileType;
 import org.jetbrains.plugins.groovy.GroovyLanguage;
-import com.intellij.psi.PsiDocumentManager;
-import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiFileFactory;
-import com.intellij.openapi.editor.EditorFactory;
-import com.intellij.util.ui.UIUtil;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class LanguageEditor extends JPanel implements Disposable {
+public class LanguageEditor extends JPanel implements Disposable, DataProvider {
     private final EditorTextField editor;
     private final Project project;
     private EditorEx editorEx;
+    private String lastSavedContent;
 
     public LanguageEditor(Project project, LanguageSupports languageSupport) {
         super(new BorderLayout());
         this.project = project;
 
         Language language = languageSupport == LanguageSupports.Groovy ? GroovyLanguage.INSTANCE : PlainTextLanguage.INSTANCE;
+        
         // 创建编辑器
         editor = new LanguageTextField(language, project, "", false) {
             @Override
@@ -72,11 +71,77 @@ public class LanguageEditor extends JPanel implements Disposable {
             }
         };
 
+        DefaultActionGroup actionGroup = getDefaultActionGroup();
+        ActionToolbar toolbar = ActionManager.getInstance().createActionToolbar("ActionScriptEditor", actionGroup, true);
+        toolbar.setTargetComponent(this);
+
         // 设置编辑器的首选大小
         editor.setPreferredSize(new Dimension(600, 400));
 
-        // 添加编辑器到面板
+        // 添加工具栏和编辑器到面板
+        JPanel topPanel = JBUI.Panels.simplePanel().addToLeft(toolbar.getComponent());
+        add(topPanel, BorderLayout.NORTH);
         add(editor, BorderLayout.CENTER);
+        
+        // 保存初始内容
+        lastSavedContent = "";
+    }
+
+    private @NotNull DefaultActionGroup getDefaultActionGroup() {
+        DefaultActionGroup actionGroup = new DefaultActionGroup();
+        actionGroup.add(new RunScriptAction("Run selected", "Run the selected code snippet", AllIcons.Actions.Execute));
+        actionGroup.add(new RunScriptAction("Run Script", "Execute the current script", AllIcons.Actions.RunAll, false));
+        actionGroup.addSeparator();
+
+        actionGroup.add(new DefaultAnAction("Comment", AllIcons.Actions.InlayRenameInComments,
+                event -> EditorActionUtil.toggleLineComment(editorEx, editorEx.getCaretModel().getCurrentCaret())));
+
+        actionGroup.add(new DefaultAnAction("Revert", AllIcons.Diff.Revert, event -> {
+            if (!editor.getText().equals(lastSavedContent)) {
+                editor.setText(lastSavedContent);
+            }
+        }));
+
+        actionGroup.add(new DefaultAnAction(() -> editorEx.getCaretModel().getCurrentCaret().hasSelection() ? "Reformat selected text" : "Reformat Code",
+                AllIcons.Actions.ReformatCode, event -> EditorActionUtil.reformatCode(project, editorEx)));
+
+        return actionGroup;
+    }
+
+    static class RunScriptAction extends AnAction {
+        private boolean snippets = true;
+
+        public RunScriptAction(String text, String description, Icon icon) {
+            super(text, description, icon);
+        }
+
+        public RunScriptAction(String text, String description, Icon icon, boolean snippets) {
+            super(text, description, icon);
+            this.snippets = snippets;
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            Editor editor = e.getData(CommonDataKeys.EDITOR);
+            if (editor != null) {
+                Caret caret = editor.getCaretModel().getCurrentCaret();
+                String scriptContent = snippets && caret.hasSelection() ? caret.getSelectedText() : editor.getDocument().getText();
+
+                GroovyScriptRunner scriptRunner = new GroovyScriptRunner(e.getProject());
+                scriptRunner.additionalCapabilities(e);
+                scriptRunner.executeScript(scriptContent);
+            }
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            e.getPresentation().setEnabled(true);
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
     }
 
     @Override
@@ -86,7 +151,6 @@ public class LanguageEditor extends JPanel implements Disposable {
             editor.setEnabled(enabled);
             if (editorEx != null) {
                 editorEx.setViewer(!enabled);
-                // 更新编辑器的背景色
                 if (enabled) {
                     editorEx.setBackgroundColor(null);
                 } else {
@@ -98,8 +162,8 @@ public class LanguageEditor extends JPanel implements Disposable {
 
     public void setText(String text) {
         editor.setText(text);
-        // 清空撤销历史
-        ((UndoManagerImpl)UndoManager.getInstance(project)).dropHistoryInTests();
+        lastSavedContent = text;
+        ((UndoManagerImpl) UndoManager.getInstance(project)).dropHistoryInTests();
     }
 
     public String getText() {
@@ -117,5 +181,19 @@ public class LanguageEditor extends JPanel implements Disposable {
             editorEx = null;
         }
         removeAll();
+    }
+
+    @Override
+    public @Nullable Object getData(@NotNull String dataId) {
+        if (CommonDataKeys.EDITOR.is(dataId) && editorEx != null) {
+            return editorEx;
+        }
+        if (CommonDataKeys.PROJECT.is(dataId)) {
+            return project;
+        }
+        if (CommonDataKeys.CARET.is(dataId) && editorEx != null) {
+            return editorEx.getCaretModel().getCurrentCaret();
+        }
+        return null;
     }
 }

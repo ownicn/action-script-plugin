@@ -49,7 +49,7 @@ public class DefaultSelection implements Selection {
     @Override
     public String getPath() {
         Editor editor = event.getData(CommonDataKeys.EDITOR);
-        if (editor != null) {
+        if (editor != null && editor.getVirtualFile() != null) {
             return editor.getVirtualFile().getPath();
         }
         // 尝试从项目视图获取
