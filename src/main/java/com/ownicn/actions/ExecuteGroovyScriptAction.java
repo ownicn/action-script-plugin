@@ -3,7 +3,7 @@ package com.ownicn.actions;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.ownicn.groovy.GroovyScriptRunner;
+import com.ownicn.runner.ActionScriptRunner;
 import com.ownicn.settings.ActionScriptSettings;
 import com.ownicn.settings.ActionScriptSettings.ScriptEntry;
 import org.jetbrains.annotations.NotNull;
@@ -61,7 +61,7 @@ public class ExecuteGroovyScriptAction extends AnAction {
         ScriptEntry script = scripts.get(i);
         String name = (i < 9) ? String.format("_%d ", i + 1) + script.getName() : "   " + script.getName();
         return new DefaultAnAction(name, actionEvent -> {
-            GroovyScriptRunner scriptRunner = new GroovyScriptRunner(project);
+            ActionScriptRunner scriptRunner = new ActionScriptRunner(project);
             scriptRunner.additionalCapabilities(actionEvent);
             scriptRunner.executeScript(script.getContent());
         });

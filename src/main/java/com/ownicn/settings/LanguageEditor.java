@@ -21,7 +21,7 @@ import com.intellij.ui.LanguageTextField;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
 import com.ownicn.actions.DefaultAnAction;
-import com.ownicn.groovy.GroovyScriptRunner;
+import com.ownicn.runner.ActionScriptRunner;
 import com.ownicn.util.EditorActionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -127,7 +127,7 @@ public class LanguageEditor extends JPanel implements Disposable, DataProvider {
                 Caret caret = editor.getCaretModel().getCurrentCaret();
                 String scriptContent = snippets && caret.hasSelection() ? caret.getSelectedText() : editor.getDocument().getText();
 
-                GroovyScriptRunner scriptRunner = new GroovyScriptRunner(e.getProject());
+                ActionScriptRunner scriptRunner = new ActionScriptRunner(e.getProject());
                 scriptRunner.additionalCapabilities(e);
                 scriptRunner.executeScript(scriptContent);
             }

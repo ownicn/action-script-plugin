@@ -6,7 +6,7 @@ import groovy.lang.MissingPropertyException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import static com.ownicn.groovy.GroovyScriptRunner.SCRIPT_NAME;
+import static com.ownicn.runner.ActionScriptRunner.SCRIPT_NAME;
 
 public class ScriptErrorHandler {
     private record ErrorLocation(int lineNumber, int columnNumber) {
