@@ -76,6 +76,8 @@ public class ActionScriptRunner implements Disposable {
                 System.setErr(stderrStream);
 
                 Object result = shell.evaluate(scriptContent, SCRIPT_NAME);
+                stdoutStream.flush();
+                stderrStream.flush();
                 if (result != null && scriptContent.trim().matches("(?s).*\\breturn\\b.*$")) {
                     consoleView.print(result + "\n", ConsoleViewContentType.NORMAL_OUTPUT);
                 }

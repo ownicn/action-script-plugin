@@ -6,6 +6,7 @@ import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +21,7 @@ public class ActionScriptSettings implements PersistentStateComponent<ActionScri
 
     public static class State {
         private List<ScriptEntry> scripts = new ArrayList<>();
+        private boolean softWrapEnabled = false;
 
         public State() {
         }
@@ -30,6 +32,14 @@ public class ActionScriptSettings implements PersistentStateComponent<ActionScri
 
         public void setScripts(List<ScriptEntry> scripts) {
             this.scripts = scripts;
+        }
+
+        public boolean isSoftWrapEnabled() {
+            return softWrapEnabled;
+        }
+
+        public void setSoftWrapEnabled(boolean softWrapEnabled) {
+            this.softWrapEnabled = softWrapEnabled;
         }
     }
 
@@ -83,12 +93,20 @@ public class ActionScriptSettings implements PersistentStateComponent<ActionScri
     }
 
     @Override
-    public State getState() {
+    public @Nullable State getState() {
         return scriptState;
     }
 
     @Override
     public void loadState(@NotNull State state) {
         XmlSerializerUtil.copyBean(state, scriptState);
+    }
+
+    public void setSoftWrapEnabled(boolean enabled) {
+        scriptState.setSoftWrapEnabled(enabled);
+    }
+
+    public boolean isSoftWrapEnabled() {
+        return scriptState.isSoftWrapEnabled();
     }
 } 

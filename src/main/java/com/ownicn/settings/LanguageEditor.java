@@ -35,10 +35,12 @@ public class LanguageEditor extends JPanel implements Disposable, DataProvider {
     private final Project project;
     private EditorEx editorEx;
     private String lastSavedContent;
+    private final ActionScriptSettings actionScriptSettings;
 
     public LanguageEditor(Project project, LanguageSupports languageSupport) {
         super(new BorderLayout());
         this.project = project;
+        this.actionScriptSettings = ActionScriptSettings.getInstance();
 
         Language language = languageSupport == LanguageSupports.Groovy ? GroovyLanguage.INSTANCE : PlainTextLanguage.INSTANCE;
         
@@ -61,7 +63,8 @@ public class LanguageEditor extends JPanel implements Disposable, DataProvider {
                 settings.setLineNumbersShown(true);
                 settings.setIndentGuidesShown(true);
                 settings.setFoldingOutlineShown(true);
-                settings.setUseSoftWraps(false);
+                
+                settings.setUseSoftWraps(actionScriptSettings.isSoftWrapEnabled());
 
                 // 显示滚动条
                 editorEx.setVerticalScrollbarVisible(true);
@@ -105,7 +108,33 @@ public class LanguageEditor extends JPanel implements Disposable, DataProvider {
         actionGroup.add(new DefaultAnAction(() -> editorEx.getCaretModel().getCurrentCaret().hasSelection() ? "Reformat selected text" : "Reformat Code",
                 AllIcons.Actions.ReformatCode, event -> EditorActionUtil.reformatCode(project, editorEx)));
 
+        actionGroup.add(new ToggleSoftWrapAction());
+
         return actionGroup;
+    }
+
+    // 添加自动换行开关动作类
+    private class ToggleSoftWrapAction extends ToggleAction {
+        public ToggleSoftWrapAction() {
+            super("Toggle Soft Wrap", "Toggle soft wrapping of text", AllIcons.Actions.ToggleSoftWrap);
+        }
+
+        @Override
+        public boolean isSelected(@NotNull AnActionEvent e) {
+            return actionScriptSettings.isSoftWrapEnabled();
+        }
+
+        @Override
+        public void setSelected(@NotNull AnActionEvent e, boolean state) {
+            EditorSettings editorSettings = editorEx.getSettings();
+            editorSettings.setUseSoftWraps(state);
+            actionScriptSettings.setSoftWrapEnabled(state);
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.BGT;
+        }
     }
 
     static class RunScriptAction extends AnAction {

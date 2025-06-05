@@ -23,7 +23,8 @@ public class ExecuteGroovyScriptAction extends AnAction {
         ApplicationManager.getApplication().invokeLater(() -> JBPopupFactory.getInstance()
                 .createActionGroupPopup("Execute Action Script", createActionGroup(project),
                         e.getDataContext(), JBPopupFactory.ActionSelectionAid.MNEMONICS, true)
-                .showInBestPositionFor(e.getDataContext()), ModalityState.nonModal());
+                // .showInBestPositionFor(e.getDataContext()), ModalityState.nonModal());
+                .showCenteredInCurrentWindow(project));
     }
 
     @Override
